@@ -1,0 +1,166 @@
+# Идентификация через производные
+
+from dataclasses import dataclass, field
+from typing import List
+@dataclass
+class CalculatedValues:
+  values: List[float] = field(default_factory=list)
+  def add(self, element):
+    self.values.append(element)
+calc_q = CalculatedValues()
+calc__q = CalculatedValues()
+calc_q_N = CalculatedValues()
+calc_dp = CalculatedValues()
+calc_dp_3 = CalculatedValues()
+calc_dp_4 = CalculatedValues()
+calc_y = CalculatedValues()
+for _k in range(ident_k-1):
+  q_N = (1/(gamma*r_U))*(df_ident['p_8'][_k+1]-p_L)
+  dp_3 = (1/ident_dt)*(df_ident['p_3'][_k+1]-df_ident['p_3'][_k])
+  dp_4 = (1/ident_dt)*(df_ident['p_4'][_k+1]-df_ident['p_4'][_k])
+  dp = dp_3 - dp_4
+  q = q_N + ((S_t/gamma) * dp)
+  if _k == 0:
+    _q = q
+  else:
+    _q = _q + (ident_dt/T_2)*(q - _q)
+  y = df_ident['p_3'][_k] + gamma*(H_R-H_N+r_K*q)
+  calc_q_N.add(q_N)
+  calc_q.add(q)
+  calc__q.add(_q)
+  calc_dp.add(dp)
+  calc_dp_3.add(dp_3)
+  calc_dp_4.add(dp_4)
+  calc_y.add(y)
+
+ calc_df = pd.DataFrame({'q_N': calc_q_N.values, 'q': calc_q.values, '_q': calc__q.values, dp': calc_dp.values, 'dp_3': calc_dp_3.values, 'dp_4': calc_dp_4.values, 'y': calc_y.values})
+
+
+ # формируем и заполняем матрицу размерностью 2x2
+A = np.empty((3, 3))
+A[[0], [0]] = ident_k-1
+A[[0], [1]] = sum(calc_q.values)
+A[[0], [2]] = sum(calc__q.values)
+
+A[[1], [0]] = sum(calc_q.values)
+A[[1], [1]] = sum([value**2 for value in calc_q.values])
+A[[1], [2]] = sum([calc__q.values[i]*calc_q.values[i] for i in range(ident_k-1)])
+
+A[[2], [0]] = sum(calc__q.values)
+A[[2], [1]] = sum([calc__q.values[i]*calc_q.values[i] for i in range(ident_k-1)])
+A[[2], [2]] = sum([value**2 for value in calc__q.values])
+A
+
+
+# находим обратную матрицу
+A = np.linalg.inv(A)
+# формируем и заполняем матрицу размерностью 3x1
+C = np.empty((3, 1))
+C[0] = sum(calc_y.values)
+C[1] = sum([calc_y.values[i]*calc_q.values[i] for i in range(ident_k-1)])
+C[2] = sum([calc_y.values[i]*calc__q.values[i] for i in range(ident_k-1)])
+C
+
+# умножаем матрицу на вектор
+ww = np.dot(A, C)
+ww
+
+
+import scipy
+X = np.array([[1 for _ in range(ident_k-1)],
+              calc_q.values,
+              calc__q.values]).T
+y = np.array([calc_y.values]).T
+b, squared_error_sum, matrix_rank, SVD_ = scipy.linalg.lstsq(X, y)
+print(b)
+
+
+
+from matplotlib import pyplot as plt
+fig, ax = plt.subplots(figsize=(10, 5))
+twin1 = ax.twinx()
+
+plt.rcParams.update({'font.size': 16})
+
+p1, = ax.plot(df['x'], df['q'], 'b', lw=2, label="q")
+p2, = ax.plot(df['x'], df['q_N'], 'r', lw=2, label="$q_N$")
+p3, = ax.plot(df['x'], df['q_L'], 'k--', lw=2, label="$q_L$")
+
+p4, = twin1.plot(df['x'],  df['u']*40,'k', lw=1, label="w")
+
+
+ax.set(ylim=(40, 125), xlabel="Сутки", ylabel="q, $q_N$, $q_L$")
+twin1.set(ylim=(0, 160), ylabel="$\omega$")
+
+plt.title('Моделирование дебита, $м^3/сут$')
+
+ax.legend(handles=[p1, p2, p3, p4])
+ax.grid()
+plt.show()
+
+
+
+
+from matplotlib import pyplot as plt
+fig, ax = plt.subplots(figsize=(10, 5))
+
+twin1 = ax.twinx()
+
+p1, = ax.plot(df['x'], df['p_8'], 'r', lw=2, label="$p(8)$")
+p2, = ax.plot(df['x'], df['p_3'], 'b', lw=2, label="$p(3)$")
+
+p3, = twin1.plot(df['x'], df['p_1'], 'k--', lw=2, label="$p(1)$")
+
+
+ax.set(ylim=(0, 16), xlabel="Сутки", ylabel="$p(3)$, $p(8)$")
+twin1.set(ylim=(0, 22), ylabel="$p(1)$")
+plt.title('Моделирование давлений, $МПа$')
+ax.legend(handles=[p1, p2, p3])
+ax.grid()
+plt.show()
+
+
+
+
+from matplotlib import pyplot as plt
+fig, ax = plt.subplots(figsize=(10, 5))
+
+twin1 = ax.twinx()
+
+p1, = ax.step(df['x'][:-denominator:denominator], calc_df['q'], 'b', lw=1, label="$q$")
+#p2, = ax.plot([index*denominator for index in df['x'][:ident_k-1]], alc_df['q_N'][:ident_k], 'r', lw=2, label="$q_N$")
+p3, = ax.step(df['x'][:-denominator:denominator], calc_df['_q'], 'k--', lw=1, abel="$\hat{q}$")
+
+
+p4, = twin1.plot(df['x'], df['q'], 'r--', lw=2, label="$q модель$")
+#p5, = twin1.plot(df['x'], df['q_N'], 'r--', lw=1, label="$q_N модель$")
+
+
+ax.set(ylim=(40, 140), xlabel="Сутки", ylabel="$q$, $q_N$, $\hat{q}$")
+twin1.set(ylim=(40, 140), ylabel="$q$, $q_N$, $\hat{q}$")
+
+ax.legend(handles=[p1, p3, p4])
+ax.grid()
+plt.show()
+
+
+from matplotlib import pyplot as plt
+fig, ax = plt.subplots(figsize=(10, 5))
+
+twin1 = ax.twinx()
+
+#p1, = ax.plot([index*denominator for index in df['x'][:ident_k-1]], calc_df['q'][:ident_k], b', lw=3, label="$q$")
+p2, = ax.step(df['x'][:-denominator:denominator], calc_df['q_N'], 'b', lw=2, label="$q_N$")
+#p3, = ax.plot([index*denominator for index in df['x'][:ident_k-1]], alc_df['_q'][:ident_k], 'k--', lw=1, label="$\hat{q}$")
+
+
+#p4, = twin1.plot(df['x'], df['q'], 'r--', lw=2, label="$q модель$")
+p5, = twin1.plot(df['x'], df['q_N'], 'r--', lw=2, label="$q_N модель$")
+
+
+ax.set(ylim=(0, 140), xlabel="Сутки", ylabel="$q$, $q_N$, $\hat{q}$")
+twin1.set(ylim=(0, 140), ylabel="$q$, $q_N$, $\hat{q}$")
+
+ax.legend(handles=[p2, p5])
+ax.grid()
+plt.show()
