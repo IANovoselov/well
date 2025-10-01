@@ -1,0 +1,1 @@
+plt.rcParams.update({'font.size': 14})
