@@ -70,12 +70,12 @@ def build_plot(
             mins.append(values.min())
 
         # Масштаб по измерениям
-        min_limit = y_scale[ax_index].min if y_scale[ax_index].min is not None else min(mins) * 0.9
-        max_limit = y_scale[ax_index].max if y_scale[ax_index].max is not None else max(maxes) * 1.1
+        min_limit = y_scale.min if y_scale else min(mins) * 0.9
+        max_limit = y_scale.max if y_scale else max(maxes) * 1.1
 
-        y_label = f"${', '.join([plot_data.label for plot_data in data[ax_index] if plot_data.label])}$"
+        y_label = f"${', '.join([plot_data.label for plot_data in data[ax_index].get('data') if plot_data.label])}$"
         if mu:
-            y_label += f', {mu}'
+            y_label += f', ${mu}$'
 
         _ax.set(ylim=(min_limit, max_limit), xlabel=xlabel, ylabel=y_label)
 
