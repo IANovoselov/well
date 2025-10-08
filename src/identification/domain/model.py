@@ -81,7 +81,7 @@ def get_data_by_slices(calc_df, ident_dt, times):
 
   return result
 
-def identificate_regul(calc_df, calc_df_static, ident_k, denominator, v_r):
+def identificate_regul(calc_df, calc_df_static, v_r, m2=0, m3=0):
 
     # формируем и заполняем матрицу размерностью 2x2
     A1 = np.empty((3, 3))
@@ -131,9 +131,9 @@ def identificate_regul(calc_df, calc_df_static, ident_k, denominator, v_r):
     A3[[2], [1]] = -v_r
     A3[[2], [2]] = v_r * v_r
 
-    A3 = ident_k * A3
+    A3 = m3 * A3
 
-    A = A1 + A2 #+ A3
+    A = A1 + A2 + A3
 
     # находим обратную матрицу
     A = np.linalg.inv(A)

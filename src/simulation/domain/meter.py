@@ -79,6 +79,9 @@ def add_noise(clean_data,
     # 2. Генерация высокочастотного шума
     hf_noise = generate_hf_noise(hf_amplitude*1.5, len(clean_data))
 
+    mean = hf_noise.mean()
+    hf_noise -= mean
+
     # 3. Комбинация шумов с чистыми данными
     noisy_data = clean_data + hf_noise #+ lf_noise
 
@@ -96,4 +99,5 @@ def generate_hf_noise(amplitude: float, size: int) -> list[float]:
     a = (min_val - mu) / sigma
     b = (max_val - mu) / sigma
 
+    #return np.random.normal(loc=mu, scale=amplitude, size=size)
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=size)
