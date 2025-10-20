@@ -1,13 +1,13 @@
 # Идентификация через фильтр
 
-from dataclasses import dataclass, field
 import scipy
 import pandas as pd
 import numpy as np
 
-from scipy.signal import medfilt
+from src.helpers import filter_data
 
-def ident_values(ident_k, ident_dt, df_ident, well):
+
+def ident_values(ident_k, ident_dt, df_ident, well, filter_name=None):
   calc_q_L = []
   calc_dp = []
   calc_dp_t = []
@@ -52,9 +52,12 @@ def ident_values(ident_k, ident_dt, df_ident, well):
   calc_df = pd.DataFrame({'q_L': calc_q_L,
                           'dp': calc_dp,
                           'dp_t': calc_dp_t,
-                          'q_t': calc_q_t,
-                          'p_1_t': calc_p_1_t,
-                          '_q_t': calc__q_t,
+                          'q_t': filter_data(calc_q_t, filter_name, ident_dt, well.pump.t_N),
+                          'p_1_t': filter_data(calc_p_1_t, filter_name, ident_dt, well.pump.t_N),
+                          '_q_t': filter_data(calc__q_t, filter_name, ident_dt, well.pump.t_N),
+                          'q_t_original': calc_q_t,
+                          'p_1_t_original': calc_p_1_t,
+                          '_q_t_original': calc__q_t,
                           })
 
   return calc_df

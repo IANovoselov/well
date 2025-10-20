@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import date
 from matplotlib import pyplot as plt
 from dataclasses import dataclass
+import pandas as pd
 
 PLOT_HIGHT = 5  # Высота графика
 PLOT_WIDTH = 10  # Ширина графика
