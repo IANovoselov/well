@@ -68,6 +68,9 @@ def identificate(calc_df, ident_k):
               calc_df['_q_t']*-1]).T
   y = np.array(calc_df['p_1_t']).T
   b, squared_error_sum, matrix_rank, SVD_ = scipy.linalg.lstsq(X, y)
+
+  #b = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
+
   return b
 
 def get_data_by_slices(calc_df, ident_dt, times):
@@ -85,6 +88,31 @@ def get_data_by_slices(calc_df, ident_dt, times):
   return result
 
 def identificate_regul(calc_df, calc_df_static, v_r, m2=0, m3=0):
+
+    # X1 = np.array([[1] * len(calc_df),
+    #               calc_df['q_t'] * -1,
+    #               calc_df['_q_t'] * -1])
+    #
+    # X2 = m2 * np.array([[1] * len(calc_df_static),
+    #               calc_df_static['_q_t'] * -1,
+    #               calc_df_static['_q_t'] * -1])
+    #
+    # X3 = m3 * np.array([[0],
+    #                     [1],
+    #                     [-v_r]])
+    #
+    # X = X1.dot(X1.T) + X2.dot(X2.T) + X3.dot(X3.T)
+    #
+    # Y1 =  np.array(calc_df['p_1_t'])
+    #
+    # Y2 = m2 * np.array(calc_df_static['p_1_t'])
+    #
+    # Y = Y1.dot(X1.T) + Y2.dot(X2.T)
+    #
+    # X = np.linalg.inv(X)
+    # b = np.dot(X, Y)
+    #
+    # return b.T
 
     # формируем и заполняем матрицу размерностью 2x2
     A1 = np.empty((3, 3))

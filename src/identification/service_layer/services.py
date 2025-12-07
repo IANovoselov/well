@@ -66,6 +66,7 @@ def error_diagrams(plt, res, res_regul, well):
     plt.ylabel('$\delta,\ \%$')
     plt.grid()
     plt.legend()
+    plt.ylim(0, 80)
 
     # График НЧ шума
     ax = plt.subplot(1, 3, 2)
@@ -87,6 +88,7 @@ def error_diagrams(plt, res, res_regul, well):
     plt.xlabel('Амплитуда шума, 5%')
     plt.grid()
     plt.legend()
+    plt.ylim(0, 80)
 
     # График ВЧ шума
     ax = plt.subplot(1, 3, 3)
@@ -108,6 +110,7 @@ def error_diagrams(plt, res, res_regul, well):
     plt.xlabel('Амплитуда шума, 10%')
     plt.grid()
     plt.legend()
+    plt.ylim(0, 80)
 
     plt.tight_layout()
     return plt
