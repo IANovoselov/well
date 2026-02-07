@@ -33,11 +33,11 @@ def calc_bias_by_series(series, true_val):
 
 def calc_error(arr, true_val):
   avg = arr.mean()
-  return round(abs(float(((true_val-avg)/true_val) * 100)), 2)
+  return round(abs(float(((true_val-avg)/true_val) * 100)), 1)
 
 def error_diagrams(plt, res, res_regul, well):
     # Визуализация
-    plt.figure(figsize=(14, 4))
+    plt.figure(figsize=(16, 4))
 
     categories = ['$p_R$', '$r(1)$', '$r(2)$']
     # Настройки отображения
@@ -54,8 +54,8 @@ def error_diagrams(plt, res, res_regul, well):
     data2 = [calc_error(res_regul['p_R'][0, 0, n], well.reservoir.p_R),
              calc_error(res_regul['r_1'][0, 0, n], well.reservoir.r_1),
              calc_error(res_regul['r_2'][0, 0, n], well.reservoir.r_2)]
-    bars1 = ax.bar(x - bar_width / 2, data1, bar_width, label='Оценка', color='skyblue')
-    bars2 = ax.bar(x + bar_width / 2, data2, bar_width, label='Оценка с регул.', color='lightcoral')
+    bars1 = ax.bar(x - bar_width / 2, data1, bar_width, label='$\delta$', color='skyblue')
+    bars2 = ax.bar(x + bar_width / 2, data2, bar_width, label='$\delta$ с регуляризацией', color='lightcoral')
 
     # Добавляем подписи значений над столбцами
     ax.bar_label(bars1, label_type='edge')
@@ -77,15 +77,15 @@ def error_diagrams(plt, res, res_regul, well):
     data2 = [calc_error(res_regul['p_R'][0, 0, n], well.reservoir.p_R),
              calc_error(res_regul['r_1'][0, 0, n], well.reservoir.r_1),
              calc_error(res_regul['r_2'][0, 0, n], well.reservoir.r_2)]
-    bars1 = ax.bar(x - bar_width / 2, data1, bar_width, label='Оценка', color='skyblue')
-    bars2 = ax.bar(x + bar_width / 2, data2, bar_width, label='Оценка с регул.', color='lightcoral')
+    bars1 = ax.bar(x - bar_width / 2, data1, bar_width, label='$\delta$', color='skyblue')
+    bars2 = ax.bar(x + bar_width / 2, data2, bar_width, label='$\delta$ с регуляризацией', color='lightcoral')
 
     # Добавляем подписи значений над столбцами
     ax.bar_label(bars1, label_type='edge')
     ax.bar_label(bars2, label_type='edge')
     ax.set_xticks(x)
     ax.set_xticklabels(categories)
-    plt.xlabel('Амплитуда шума, 5%')
+    plt.xlabel('Амплитуда шума, 25%')
     plt.grid()
     plt.legend()
     plt.ylim(0, 80)
@@ -99,15 +99,15 @@ def error_diagrams(plt, res, res_regul, well):
     data2 = [calc_error(res_regul['p_R'][0, 0, n], well.reservoir.p_R),
              calc_error(res_regul['r_1'][0, 0, n], well.reservoir.r_1),
              calc_error(res_regul['r_2'][0, 0, n], well.reservoir.r_2)]
-    bars1 = ax.bar(x - bar_width / 2, data1, bar_width, label='Оценка', color='skyblue')
-    bars2 = ax.bar(x + bar_width / 2, data2, bar_width, label='Оценка с регул.', color='lightcoral')
+    bars1 = ax.bar(x - bar_width / 2, data1, bar_width, label='$\delta$', color='skyblue')
+    bars2 = ax.bar(x + bar_width / 2, data2, bar_width, label='$\delta$ с регуляризацией', color='lightcoral')
 
     # Добавляем подписи значений над столбцами
     ax.bar_label(bars1, label_type='edge')
     ax.bar_label(bars2, label_type='edge')
     ax.set_xticks(x)
     ax.set_xticklabels(categories)
-    plt.xlabel('Амплитуда шума, 10%')
+    plt.xlabel('Амплитуда шума, 50%')
     plt.grid()
     plt.legend()
     plt.ylim(0, 80)
