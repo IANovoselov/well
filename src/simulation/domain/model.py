@@ -18,7 +18,7 @@ betta_G_lim = 0.25  # По газу у первой ступени
 def transfer_function(current_val: float, target: float, tf_time: float, dt: float):
     return current_val + ((dt / tf_time) * (target - current_val))
 
-def construct_well(w_1=12, w_2=60, p_R=21.65):
+def construct_well(w_1=12, w_2=60, p_R=21.65, agzu_on=True, p_L_change_on=True):
    oil = Oil()
 
    reservoir = Reservoir(w_1, w_2, p_R)
@@ -30,10 +30,10 @@ def construct_well(w_1=12, w_2=60, p_R=21.65):
    pump.smooth_enable = False
 
    agzu = AGZU()
-   agzu.enable = True
+   agzu.enable = agzu_on
 
    well = Well(oil, pump, reservoir, well_params, agzu)
-   well.p_L_change_enable = True
+   well.p_L_change_enable = p_L_change_on
 
    return well
 

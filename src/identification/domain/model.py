@@ -71,7 +71,7 @@ def identificate(calc_df, ident_k):
 
   #b = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
 
-  return b
+  return b, squared_error_sum
 
 def get_data_by_slices(calc_df, ident_dt, times):
 
