@@ -24,7 +24,7 @@ class Scale:
 
 
 def build_plot(
-    data: dict,
+    data: list[dict],
 ):
     """Построитель графиков"""
 
