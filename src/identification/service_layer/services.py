@@ -35,6 +35,9 @@ def calc_error(arr, true_val):
   avg = arr.mean()
   return round(abs(float(((true_val-avg)/true_val) * 100)), 1)
 
+def calc_error_by_series(series, true_val):
+    return [calc_error(res, true_val) for res in series]
+
 def error_diagrams(plt, res, res_regul, well):
     # Визуализация
     plt.figure(figsize=(16, 4))
