@@ -26,6 +26,7 @@ class Meter:
                                'p_8': [np.round(index / quant_step) * quant_step for index in self.add_noise(df['p_8'])[::denominator]],
                                'p_L': [np.round(index / quant_step) * quant_step for index in self.add_noise(df['p_L'])[::denominator]],
                                'x': [_x for _x in df['x'][::denominator]],
+                               'u': [_x for _x in df['u'][::denominator]]
                                })
     else:
       df_ident = pd.DataFrame({'p_3': [_x for _x in self.add_noise(df['p_3'])[::denominator]],
@@ -33,6 +34,7 @@ class Meter:
                                'p_8': [_x for _x in self.add_noise(df['p_8'])[::denominator]],
                                'p_L': [_x for _x in self.add_noise(df['p_L'])[::denominator]],
                                'x': [_x for _x in df['x'][::denominator]],
+                               'u': [_x for _x in df['u'][::denominator]]
                                })
 
     return ident_dt, ident_k, df_ident
@@ -99,5 +101,8 @@ def generate_hf_noise(amplitude: float, size: int) -> list[float]:
     a = (min_val - mu) / sigma
     b = (max_val - mu) / sigma
 
+    rng = np.random.default_rng()
+
     #return np.random.normal(loc=mu, scale=amplitude, size=size)
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=size)
+    #return rng.normal(mu, sigma, size)

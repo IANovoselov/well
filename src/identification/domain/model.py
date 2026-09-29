@@ -62,6 +62,158 @@ def ident_values(ident_k, ident_dt, df_ident, well, filter_name=None):
 
   return calc_df
 
+def ident_values_nkt(ident_k, ident_dt, df_ident, well, filter_name=None):
+  calc_q_N = []
+  calc_b_betta_L = []
+  calc_b_betta_3 = []
+  calc_y = []
+  calc_x_1 = []
+  calc_x_2 = []
+  calc_x_3 = []
+
+  well.pump.i = 1
+
+  for _k in range(ident_k):
+
+      b_betta_L = well.b_0 - well.b_1*(well.params.p_G0 - df_ident['p_L'][_k])
+
+      q_N = (b_betta_L/(well.oil.gamma*well.params.r_U))*(max(df_ident['p_8'][_k]-df_ident['p_L'][_k], 0))
+
+      b_betta_3 = well.b_0 - well.params.alpha_G_3 * well.b_1 * (well.params.p_G0 - df_ident['p_3'][_k])
+
+      calc_q_N.append(q_N)
+      calc_b_betta_L.append(b_betta_L)
+      calc_b_betta_3.append(b_betta_3)
+
+      if _k == 0:
+          _p_3 = df_ident['p_3'][0]
+          _b_betta_L = (1/b_betta_L)
+      else:
+          _p_3 = _p_3 + (ident_dt / well.pump.t_N) * (df_ident['p_3'][_k] - _p_3)
+          _b_betta_L = _b_betta_L + (ident_dt / well.pump.t_N) * ((1/b_betta_L) - _b_betta_L)
+
+      y = _b_betta_L*well.pump.H_N + ((df_ident['p_8'][_k] - _p_3)/well.oil.gamma)
+      calc_y.append(y)
+
+      well.pump.update_segment(q_N)
+      well.pump.update_segment(q_N)
+
+      x_1 = (q_N/b_betta_L)
+      x_2 = (well.pump.lambda_0[well.pump.i]*well.pump.h_0*df_ident['u'][_k] *df_ident['u'][_k] )/b_betta_3
+      x_3 = ((well.pump.lambda_1[well.pump.i]*well.pump.h_0*df_ident['u'][_k] *q_N)/(well.pump.q_0 * b_betta_3))
+
+      if _k == 0:
+          _x_1 = x_1
+          _x_2 = x_2
+          _x_3 = x_3
+      else:
+          _x_1 = _x_1 + (ident_dt / well.pump.t_N) * (x_1 - _x_1)
+          _x_2 = _x_2 + (ident_dt / well.pump.t_N) * (x_2 - _x_2)
+          _x_3 = _x_3 + (ident_dt / well.pump.t_N) * (x_3 - _x_3)
+
+
+      calc_x_1.append(_x_1)
+      calc_x_2.append(_x_2)
+      calc_x_3.append(_x_3)
+
+  calc_df = pd.DataFrame({'q_N': calc_q_N,
+                          'b_betta_L': calc_b_betta_L,
+                          'b_betta_3': calc_b_betta_3,
+                          'y': calc_y,
+                          'x_1': calc_x_1,
+                          'x_2': calc_x_2,
+                          'x_3': calc_x_3,
+                          })
+
+  return calc_df
+
+def ident_values_inflow(ident_k, ident_dt, df_ident, well, filter_name=None):
+    calc_q_N = []
+    calc_b_betta_L = []
+    calc_b_betta_3 = []
+    calc_y = []
+    calc_x_1 = []
+    calc_x_2 = []
+    calc_x_3 = []
+
+    t_t = well.pump.t_N * 5
+
+    for _k in range(ident_k):
+
+        b_betta_L = well.b_0 - well.b_1*(well.params.p_G0 - df_ident['p_L'][_k])
+
+        q_N = (b_betta_L/(well.oil.gamma*well.params.r_U))*(df_ident['p_8'][_k]-df_ident['p_L'][_k])
+
+        b_betta_3 = well.b_0 - well.params.alpha_G_3 * well.b_1 * (well.params.p_G0 - df_ident['p_3'][_k])
+
+        d_p = df_ident['p_3'][_k]-df_ident['p_4'][_k]
+
+        calc_q_N.append(q_N)
+        calc_b_betta_L.append(b_betta_L)
+        calc_b_betta_3.append(b_betta_3)
+
+        if _k == 0:
+            _q_N = q_N
+            _p_3 = df_ident['p_3'][0]
+            _b_betta_3 = (1/b_betta_3)
+            _d_p = d_p
+        else:
+            _p_3 = _p_3 + (ident_dt / t_t) * (df_ident['p_3'][_k] - _p_3)
+            _b_betta_3 = _b_betta_3 + (ident_dt / t_t) * ((1/b_betta_3) - _b_betta_3)
+            _q_N = _q_N + (ident_dt / t_t) * (q_N - _q_N)
+            _d_p = _d_p + (ident_dt / t_t) * (d_p - _d_p)
+
+        q_tilda = _q_N + (well.params.S_t / (well.oil.gamma * t_t)) * (d_p - _d_p)
+
+        if _k == 0:
+            q_tilda_T = q_tilda
+        else:
+            q_tilda_T = q_tilda_T + (ident_dt / well.reservoir.T_2) * (q_tilda - q_tilda_T)
+
+        y = _p_3 + well.oil.gamma * _b_betta_3 * (well.params.H_R - well.pump.H_N + well.params.r_K * q_tilda)
+        calc_y.append(y)
+
+        x_1 = 1
+        x_2 = q_tilda
+        x_3 = q_tilda_T
+
+        calc_x_1.append(x_1)
+        calc_x_2.append(x_2)
+        calc_x_3.append(x_3)
+
+    calc_df = pd.DataFrame({'q_N': calc_q_N,
+                            'b_betta_L': calc_b_betta_L,
+                            'b_betta_3': calc_b_betta_3,
+                            'y': calc_y,
+                            'x_1': calc_x_1,
+                            'x_2': calc_x_2,
+                            'x_3': calc_x_3,
+                            })
+
+    return calc_df
+
+def identificate_nkt(calc_df, ident_k):
+  X = np.array([-calc_df['x_1'],
+                calc_df['x_2'],
+                -calc_df['x_3']]).T
+  y = np.array(calc_df['y']).T
+  b, squared_error_sum, matrix_rank, SVD_ = scipy.linalg.lstsq(X, y)
+
+  #b = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
+
+  return b, squared_error_sum
+
+def identificate_inflow(calc_df, ident_k):
+  X = np.array([calc_df['x_1'],
+                -calc_df['x_2'],
+                -calc_df['x_3']]).T
+  y = np.array(calc_df['y']).T
+  b, squared_error_sum, matrix_rank, SVD_ = scipy.linalg.lstsq(X, y)
+
+  #b = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
+
+  return b, squared_error_sum
+
 def identificate(calc_df, ident_k):
   X = np.array([[1]*ident_k,
               calc_df['q_t']*-1,
@@ -88,31 +240,34 @@ def get_data_by_slices(calc_df, ident_dt, times):
   return result
 
 def identificate_regul(calc_df, calc_df_static, v_r, m2=0, m3=0):
+    # Динамический участок
+    X1 = np.column_stack([
+        np.ones(len(calc_df)),
+        -calc_df['q_t'].to_numpy(),
+        -calc_df['_q_t'].to_numpy(),
+    ])
+    y1 = calc_df['p_1_t'].to_numpy()
+    # Статический участок
+    X2 = np.column_stack([
+        np.ones(len(calc_df_static)),
+        -calc_df_static['_q_t'].to_numpy(),
+        -calc_df_static['_q_t'].to_numpy(),
+    ])
+    y2 = calc_df_static['p_1_t'].to_numpy()
 
-    # X1 = np.array([[1] * len(calc_df),
-    #               calc_df['q_t'] * -1,
-    #               calc_df['_q_t'] * -1])
-    #
-    # X2 = m2 * np.array([[1] * len(calc_df_static),
-    #               calc_df_static['_q_t'] * -1,
-    #               calc_df_static['_q_t'] * -1])
-    #
-    # X3 = m3 * np.array([[0],
-    #                     [1],
-    #                     [-v_r]])
-    #
-    # X = X1.dot(X1.T) + X2.dot(X2.T) + X3.dot(X3.T)
-    #
-    # Y1 =  np.array(calc_df['p_1_t'])
-    #
-    # Y2 = m2 * np.array(calc_df_static['p_1_t'])
-    #
-    # Y = Y1.dot(X1.T) + Y2.dot(X2.T)
-    #
-    # X = np.linalg.inv(X)
-    # b = np.dot(X, Y)
-    #
-    # return b.T
+
+    blocks_X = [X1, m2 * X2]
+    blocks_y = [y1, m2 * y2]
+    # Регуляризация: r_1 ≈ v_r * r_2
+    if m3 > 0:
+        X3 = np.sqrt(m3) * np.array([[0.0, 1.0, -v_r]])
+        y3 = np.array([0.0])
+        blocks_X.append(X3)
+        blocks_y.append(y3)
+    X = np.vstack(blocks_X)
+    y = np.concatenate(blocks_y)
+    b, squared_error_sum, matrix_rank, SVD_ = scipy.linalg.lstsq(X, y)
+    return b
 
     # формируем и заполняем матрицу размерностью 2x2
     A1 = np.empty((3, 3))

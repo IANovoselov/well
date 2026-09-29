@@ -73,10 +73,10 @@ class Pump:
     """Насос"""
 
     # Параметры насоса
-    H_N = 2000  # уровень подвеса
+    H_N = 1660  # уровень подвеса
     q_0 = 90  # номинальный дебит
     h_0 = 2300  # номинальный напор
-    t_N = 0.02  # Постоянная времени насоса
+    t_N = 0.002  # Постоянная времени насоса
 
     # Гидросопротивление
     r_N = 4  # НКТ
@@ -95,7 +95,7 @@ class Pump:
     w_n_L = 0.96
     w_n_R = 1.04
 
-    def __init__(self):
+    def __init__(self, nn1=1.0, nn2=1.0):
         self.i = 1  # Сегмент напорной характеристики
         self.w = self._w = 1  # Частота
         self.N_1 = 0
@@ -106,6 +106,9 @@ class Pump:
 
         self.w_program = {}
         self.smooth_enable = False
+
+        self.nn1 = nn1
+        self.nn2 = nn2
 
     def set_w_by_program(self, key, dt):
         if key in self.w_program:
@@ -147,11 +150,11 @@ class Pump:
             )
         )
 
-    def calc_q_N(self, oil, p_3, p_8, b_betta_3, b_betta_L):
-        q_N = self._calc_q_N(oil, p_3, p_8, b_betta_3, b_betta_L)
+    def calc_q_N(self, oil, p_3, p_8, b_betta_3=1, b_betta_L=1):
+        q_N = self._calc_q_N(oil, p_3, p_8)
 
         if self.update_segment(q_N):
-            q_N = self._calc_q_N(oil, p_3, p_8, b_betta_3, b_betta_L)
+            q_N = self._calc_q_N(oil, p_3, p_8)
 
         self.q_N = q_N
 
@@ -180,14 +183,14 @@ class Pump:
             0,
         )
 
-    def _calc_q_N(self, oil, p_3, p_8, b_betta_3, b_betta_L):
+    def _calc_q_N(self, oil, p_3, p_8, b_betta_3=1, b_betta_L=1):
         return max(
             (
-                self.w * self.w * self.h_0 * self.lambda_0[self.i] * (1 / b_betta_3)
-                - self.H_N * (1 / b_betta_L)
+                self.nn1 * self.w * self.w * self.h_0 * self.lambda_0[self.i]
+                - self.H_N
                 + (1 / oil.gamma) * (p_3 - p_8)
             )
-            / (self.w * (self.h_0 / self.q_0) * self.lambda_1[self.i] * (1 / b_betta_3) + self.r_N * (1 / b_betta_L)),
+            / (self.nn2 * self.w * (self.h_0 / self.q_0) * self.lambda_1[self.i]  + self.r_N),
             0,
         )
 
@@ -202,6 +205,18 @@ class Pump:
             return True
 
         return False
+
+    def update_segment2(self, q_N, gamma):
+
+        value = (q_N/(self.q_0 * gamma))/self.w
+
+        if value >= self.q_Pump[2] and value <= self.q_Pump[1]:
+            self.i = 2
+        elif value >= self.q_Pump[1] and value <= self.q_Pump[0]:
+            self.i = 1
+        else:
+            self.i = 0
+
 
 
 @dataclass
@@ -221,7 +236,7 @@ class WellParameters:
     alpha_betta = 0.333
     k_S = 0.7  # Коэффициент сепарации
     X_G = 0.00008  # Газовый фактор
-    p_G0 = 17.32  # Давление насыщенного газа
+    p_G0 = 17.3  # Давление насыщенного газа
 
     M_R3 = 0.16
     p_G3 = 0
@@ -294,20 +309,10 @@ class Well:
         self.b_0 = 1 + ((1 - self.oil.betta) * self.oil.G * (0.01 / self.oil.G))
         self.b_1 = (self.b_0 - 1) / (self.params.p_G0 - p_0)
 
-        a = self.b_1 * self.params.alpha_G_3
-        b = (
-            self.b_0
-            - (self.params.alpha_G_3 * self.b_1 * self.params.p_G0)
-            - (self.b_1 * self.p_1 * self.params.alpha_G_3)
-        )
-        c = self.oil.gamma * (self.params.H_R - self.pump.H_N + (self.params.r_K * self.q)) - self.p_1 * (
-            self.b_0 - self.params.alpha_G_3 * self.b_1 * self.params.p_G0
-        )
-        p = np.poly1d([a, b, c])
-        roots = p.roots
-        self.p_3 = roots[-1]
+        self.b_betta_3 = 1
+        self.b_betta_L = 1
 
-        # self.p_3 = self.p_1 - self.oil.gamma*(self.params.H_R - self.pump.H_N + (self.params.r_K * self.q))
+        self.p_3 = self.p_1 - self.oil.gamma*(self.params.H_R - self.pump.H_N + (self.params.r_K * self.q))
         self.p_4 = (
             self.p_L
             + self.params.r_GU
@@ -317,12 +322,9 @@ class Well:
             * self.q
         )
 
-        self.b_betta_3 = self.calc_b_betta_3()
-        self.b_betta_L = self.calc_b_betta_L()
-
         self.p_8 = self.calc_p_8()
         self.p_5 = self.calc_p_5()
-        self.h_4 = (self.p_3 - self.p_4) * (self.b_betta_L / self.oil.gamma)
+        self.h_4 = (self.p_3 - self.p_4) * (1/self.oil.gamma)
 
         self.betta_G3 = 0
         self.betta_GN = 0
@@ -341,12 +343,10 @@ class Well:
             # Балансировка притока по начальным условиям
             self.balance_inflow(M_q, epsilon)
 
-            self.b_betta_L = self.calc_b_betta_L()
-
             self.p_8 = self.calc_p_8()
 
             # Расчёт подачи
-            q_N = self.pump.calc_q_N(self.oil, self.p_3, self.p_8, self.b_betta_3, self.b_betta_L)
+            q_N = self.pump.calc_q_N(self.oil, self.p_3, self.p_8)
 
             self.M_RS = (1 - self.params.k_S * np.sqrt(self.pump.w)) * self.params.M_R3
             self.betta_G3 = (self.params.M_R3 * (self.params.p_G0 - self.p_3)) / (
@@ -377,7 +377,7 @@ class Well:
             # Шаг по Эйлеру
 
             self.p_2 = transfer_function(self.p_2, self.reservoir.p_R - self.reservoir.r_2 * self.q, self.reservoir.T_2, dt)
-            self.h_4 = self.h_4 + (dt / self.params.S_t) * (self.b_betta_L * (self.q - self.pump.q_N))
+            self.h_4 = self.h_4 + (dt / self.params.S_t) * (self.q - self.pump.q_N)
             self.q_L = transfer_function(self.q_L, self.pump.q_N, self.pump.t_N, dt)
             self.p_L = self.p_L + (dt / (self.pump.t_N * 3)) * (self.p_L_rand - self.p_L)
 
@@ -405,36 +405,36 @@ class Well:
         return tuple(roots)
 
     def calc_q(self):
-        return (self.p_2 - self.p_3 - (self.oil.gamma / self.b_betta_3) * (self.params.H_R - self.pump.H_N)) / (
-            self.reservoir.r_1 + (self.oil.gamma / self.b_betta_3) * self.params.r_K
+        return (self.p_2 - self.p_3 - self.oil.gamma * (self.params.H_R - self.pump.H_N)) / (
+            self.reservoir.r_1 + self.oil.gamma * self.params.r_K
         )
 
     def calc_p_4(self):
-        return transfer_function(self.p_4, self._calc_p_4(), self.pump.t_N * 20, self.dt)
+        return transfer_function(self.p_4, self._calc_p_4(), self.pump.t_N * 5, self.dt)
 
     def _calc_p_4(self):
         return (
             self.p_L
-            + (self.params.p_G0 - self.p_3) * self.params.r_GU * np.sqrt(self.pump.w) * self.params.a_GU * self.q
+            + (max(self.params.p_G0 - self.p_3, 0)) * self.params.r_GU * np.sqrt(self.pump.w) * self.params.a_GU * self.q
         )
 
     def calc_p_3(self):
-        return self.p_4 + (self.oil.gamma / self.b_betta_L) * self.h_4
+        return self.p_4 + self.oil.gamma * self.h_4
 
     def calc_p_8(self):
-        return self.p_L + (self.oil.gamma / self.b_betta_L) * self.params.r_U * self.q_L
+        return self.p_L + self.oil.gamma * self.params.r_U * self.q_L
 
     def calc_p_1(self):
         return self.p_2 - self.reservoir.r_1 * self.q
 
     def calc_p_5(self):
-        return self.p_8 + (self.oil.gamma / self.b_betta_L) * (self.pump.H_N + self.pump.r_N * self.pump.q_N)
+        return self.p_8 + self.oil.gamma * (self.pump.H_N + self.pump.r_N * self.pump.q_N)
 
     def calc_b_betta_3(self):
-        return self.b_0 - (self.params.alpha_G_3 * self.b_1 * (self.params.p_G0 - self.p_3))
+        return 1 #self.b_0 - (self.params.alpha_G_3 * self.b_1 * (self.params.p_G0 - self.p_3))
 
     def calc_b_betta_L(self):
-        return self.b_0 - (self.b_1 * (self.params.p_G0 - self.p_L))
+        return 1 #self.b_0 - (self.b_1 * (self.params.p_G0 - self.p_L))
 
     def balance_inflow(self, M_q, epsilon):
         """Балансировка притока по начальным условиям"""
@@ -445,13 +445,12 @@ class Well:
             self.p_3 = (1 - M_q) * self.p_3 + M_q * __p_3
             self.q = self.calc_q()
             self.p_4 = self.calc_p_4()
-            self.b_betta_3 = self.calc_b_betta_3()
             __p_3 = self.calc_p_3()
 
         self.p_3 = __p_3
         self.q = self.calc_q()
         self.p_4 = self.calc_p_4()
-        self.b_betta_3 = self.calc_b_betta_3()
+
 
     def save_result(self, res_object):
         """Сохранить результат моделирования"""
@@ -482,3 +481,126 @@ class Well:
         res_object['b_betta_L'].append(self.b_betta_L)
 
         res_object['x'].append(self.t)
+        res_object['x_hours'].append(self.t * 24)
+
+
+class Well2(Well):
+
+    def simulate(self, k, dt, M_q, epsilon, res_object):
+        """Запуск симуляции"""
+
+        self.dt = dt
+
+        for _k in range(k):
+
+            self.q = self.calc_q()
+            self.p_1 = self.calc_p_1()
+
+            # Балансировка притока по начальным условиям
+            self.balance_inflow_b_betta_3(M_q, epsilon)
+
+            # Расчёт подачи
+            self.pump.q_N = self.calc_q_N()
+            self.pump.update_segment(self.pump.q_N)
+
+            self.p_5 = self.calc_p_5()
+
+            self.b_betta_L = self.calc_b_betta_L()
+
+            self.M_RS = (1 - self.params.k_S * np.sqrt(self.pump.w)) * self.params.M_R3
+            self.betta_G3 = (self.params.M_R3 * (self.params.p_G0 - self.p_3)) / (
+                self.p_3 + self.M_RS * (self.params.p_G0 - self.p_3)
+            )
+            self.betta_GN = (self.M_RS * (self.params.p_G0 - self.p_3)) / (
+                self.p_3 + self.M_RS * (self.params.p_G0 - self.p_3)
+            )
+
+            self.pump.calc_h_N()
+            self.pump.calc_N(self.oil)
+
+            self.t = _k * dt
+
+            self.save_result(res_object)
+
+            if self.agzu.enable:
+                if p_L_agzu := self.agzu.process(_k, dt, p_L, self.p_L_change_enable):
+                    self.p_L_rand = p_L_agzu
+            if self.agzu.agzu_is_on is False and self.p_L_change_enable:
+                if _k >= self.p_L_change:
+                    self.p_L_rand = random.uniform(0.96 * p_L, 1.04 * p_L)
+                    self.p_L_change += 625
+
+            # Шаг по Эйлеру
+
+            self.p_2 = transfer_function(self.p_2, self.reservoir.p_R - self.reservoir.r_2 * self.q, self.reservoir.T_2, dt)
+            self.p_4 = transfer_function(self.p_4, self._calc_p_4(), self.pump.t_N * 5, self.dt)
+
+            self.p_8 = transfer_function(self.p_8, self._calc_p_8(), self.pump.t_N, dt)
+
+            self.h_4 = self.h_4 + (dt / self.params.S_t) * (self.b_betta_L * (self.q - self.pump.q_N))
+
+            self.p_L = self.p_L + (dt / (self.pump.t_N * 3)) * (self.p_L_rand - self.p_L)
+
+            self.pump.set_w_by_program(self.t, dt)
+
+        return res_object
+
+    def _calc_p_8(self) -> float:
+        return self.p_5 - ((self.oil.gamma / self.b_betta_L) * (self.pump.H_N + self.pump.r_N * self.pump.q_N))
+
+    def calc_q_N(self) -> float:
+        return (max((self.p_8 - self.p_L), 0) * self.b_betta_L)/ (self.oil.gamma * self.params.r_U)
+
+    def calc_b_betta_3(self):
+        return self.b_0 - (self.params.alpha_G_3 * self.b_1 * (self.params.p_G0 - self.p_3))
+
+    def calc_b_betta_L(self):
+        return self.b_0 - (self.b_1 * (self.params.p_G0 - self.p_L))
+
+    def calc_q(self):
+        return (self.p_2 - self.p_3 - (self.oil.gamma / self.b_betta_3) * (self.params.H_R - self.pump.H_N)) / (
+                self.reservoir.r_1 + (self.oil.gamma / self.b_betta_3) * self.params.r_K)
+
+    def calc_p_3(self):
+        return self.p_4 + (self.oil.gamma / self.b_betta_L) * self.h_4
+
+    def balance_inflow_b_betta_3(self, M_q, epsilon):
+        """Балансировка притока по начальным условиям"""
+
+        self.p_3 = self.calc_p_3()
+        __b_betta_3 = self.calc_b_betta_3()
+        while abs(__b_betta_3 - self.b_betta_3) > epsilon:
+            self.b_betta_3 = (1 - M_q) * self.b_betta_3 + M_q * __b_betta_3
+            self.p_3 = self.calc_p_3()
+            self.q = self.calc_q()
+            self.p_1 = self.calc_p_1()
+            __b_betta_3 = self.calc_b_betta_3()
+
+        self.b_betta_3 = __b_betta_3
+        self.p_3 = self.calc_p_3()
+        self.q = self.calc_q()
+        self.p_1 = self.calc_p_1()
+
+    def calc_p_5(self):
+        return self.p_3 + (self.oil.gamma / self.b_betta_3) * (self.pump.nn1*self.pump.w * self.pump.w * self.pump.h_0 * self.pump.lambda_0[self.pump.i] - self.pump.nn2*(self.pump.h_0/self.pump.q_0)*self.pump.lambda_1[self.pump.i]*self.pump.w*self.pump.q_N)
+
+
+
+def construct_well2(w_1=12, w_2=60, p_R=21.65, agzu_on=True, p_L_change_on=True, nn1=1, nn2=1):
+    oil = Oil()
+
+    reservoir = Reservoir(w_1, w_2, p_R)
+
+    well_params = WellParameters().init_dh_r(reservoir, oil).init_m_r3_p_g3(oil)
+
+    pump = Pump(nn1=nn1, nn2=nn2).init_h_0(well_params, reservoir, oil)
+    pump.w = pump._w = 1
+    pump.smooth_enable = False
+
+    agzu = AGZU()
+    agzu.enable = agzu_on
+
+    well = Well2(oil, pump, reservoir, well_params, agzu)
+    well.p_L_change_enable = p_L_change_on
+
+    return well
