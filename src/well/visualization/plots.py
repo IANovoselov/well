@@ -1,5 +1,4 @@
 from __future__ import annotations
-from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
@@ -87,7 +86,6 @@ def build_plot(data: list[dict], x_label="$Время, сутки$"):
         x = x[x_min:x_max]
 
         for plot_data in data[ax_index].get("data"):
-
             values = plot_data.data[x_min:x_max]
 
             (p,) = _ax.plot(
@@ -205,9 +203,9 @@ def build_plotly_figure(data: list[dict]) -> go.Figure:
                     line=_line_style(plot_data),
                     mode="lines",
                     hovertemplate=(
-                        f'{_math_text(plot_data.label or "value")}'
+                        f"{_math_text(plot_data.label or 'value')}"
                         "=%{y:.4f}<br>"
-                        f'{_math_text("t")}=%{{x:.4f}} сут<extra></extra>'
+                        f"{_math_text('t')}=%{{x:.4f}} сут<extra></extra>"
                     ),
                 ),
                 row=row,
@@ -260,15 +258,15 @@ def build_plotly_figure(data: list[dict]) -> go.Figure:
         paper_bgcolor=PAPER_BG,
         font=LATEX_FONT,
         hovermode="x unified",
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1,
-            font=LATEX_FONT,
-        ),
-        margin=dict(t=60, b=55, l=90, r=40),
+        legend={
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.02,
+            "xanchor": "right",
+            "x": 1,
+            "font": LATEX_FONT,
+        },
+        margin={"t": 60, "b": 55, "l": 90, "r": 40},
     )
     return fig
 

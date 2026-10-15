@@ -70,13 +70,13 @@ def error_diagrams(plt, res, res_regul, well):
         calc_error(res_regul["r_2"][0, 0, n], well.reservoir.r_2),
     ]
     bars1 = ax.bar(
-        x - bar_width / 2, data1, bar_width, label="$\delta$", color="skyblue"
+        x - bar_width / 2, data1, bar_width, label=r"$\delta$", color="skyblue"
     )
     bars2 = ax.bar(
         x + bar_width / 2,
         data2,
         bar_width,
-        label="$\delta$ с регуляризацией",
+        label=r"$\delta$ с регуляризацией",
         color="lightcoral",
     )
 
@@ -86,7 +86,7 @@ def error_diagrams(plt, res, res_regul, well):
     ax.set_xticks(x)
     ax.set_xticklabels(categories)
     plt.xlabel("Амплитуда шума, 0%")
-    plt.ylabel("$\delta,\ \%$")
+    plt.ylabel(r"$\delta,\ \%$")
     plt.grid()
     plt.legend()
     plt.ylim(0, 80)
@@ -105,13 +105,13 @@ def error_diagrams(plt, res, res_regul, well):
         calc_error(res_regul["r_2"][0, 0, n], well.reservoir.r_2),
     ]
     bars1 = ax.bar(
-        x - bar_width / 2, data1, bar_width, label="$\delta$", color="skyblue"
+        x - bar_width / 2, data1, bar_width, label=r"$\delta$", color="skyblue"
     )
     bars2 = ax.bar(
         x + bar_width / 2,
         data2,
         bar_width,
-        label="$\delta$ с регуляризацией",
+        label=r"$\delta$ с регуляризацией",
         color="lightcoral",
     )
 
@@ -139,13 +139,13 @@ def error_diagrams(plt, res, res_regul, well):
         calc_error(res_regul["r_2"][0, 0, n], well.reservoir.r_2),
     ]
     bars1 = ax.bar(
-        x - bar_width / 2, data1, bar_width, label="$\delta$", color="skyblue"
+        x - bar_width / 2, data1, bar_width, label=r"$\delta$", color="skyblue"
     )
     bars2 = ax.bar(
         x + bar_width / 2,
         data2,
         bar_width,
-        label="$\delta$ с регуляризацией",
+        label=r"$\delta$ с регуляризацией",
         color="lightcoral",
     )
 

@@ -26,7 +26,6 @@ def filter_data(
     current_val = 0
 
     for k, val in enumerate(data):
-
         if k == 0:
             current_val = val
         else:

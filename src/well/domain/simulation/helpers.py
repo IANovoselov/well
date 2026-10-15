@@ -1,6 +1,3 @@
-
-
-
 def get_dict_for_data():
     return {
         "q_N": [],

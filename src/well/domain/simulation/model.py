@@ -1,8 +1,9 @@
 import random
 from dataclasses import dataclass
-from src.well.domain.helpers import transfer_function
 
 import numpy as np
+
+from well.domain.helpers import transfer_function
 
 # Исходные данные для моделировния
 p_0 = 0.1  # Атмосферное давление
@@ -77,11 +78,11 @@ class Pump:
     r_N = 4  # НКТ
 
     # Напорная характеристика
-    q_Pump = [5 / 3, 4 / 3, 2 / 3]
-    lambda_0 = [10 / 3, 2, 3 / 2]
-    lambda_1 = [2, 1, 1 / 4]
-    lambda_2 = [0.5, 0.82, 0.74]
-    lambda_3 = [0.42, 0.18, 0.3]
+    q_Pump = (5 / 3, 4 / 3, 2 / 3)
+    lambda_0 = (10 / 3, 2, 3 / 2)
+    lambda_1 = (2, 1, 1 / 4)
+    lambda_2 = (0.5, 0.82, 0.74)
+    lambda_3 = (0.42, 0.18, 0.3)
 
     # Характеристики мощности
     n_N = 0.5
@@ -270,7 +271,6 @@ class WellParameters:
 
 
 class AGZU:
-
     PERIOD_TIME = 0.62  # суток
 
     def __init__(self):
@@ -366,14 +366,13 @@ class Well:
         self.dt = dt
 
         for _k in range(k):
-
             # Балансировка притока по начальным условиям
             self.balance_inflow(M_q, epsilon)
 
             self.p_8 = self.calc_p_8()
 
-            # Расчёт подачи
-            q_N = self.pump.calc_q_N(self.oil, self.p_3, self.p_8)
+            # Расчёт подачи q_N
+            self.pump.calc_q_N(self.oil, self.p_3, self.p_8)
 
             self.M_RS = (1 - self.params.k_S * np.sqrt(self.pump.w)) * self.params.M_R3
             self.betta_G3 = (self.params.M_R3 * (self.params.p_G0 - self.p_3)) / (
@@ -386,20 +385,24 @@ class Well:
             self.p_1 = self.calc_p_1()
             self.p_5 = self.calc_p_5()
 
-            h_N = self.pump.calc_h_N()
+            self.pump.calc_h_N()
             self.pump.calc_N(self.oil)
 
             self.t = _k * dt
 
             self.save_result(res_object)
 
-            if self.agzu.enable:
-                if p_L_agzu := self.agzu.process(_k, dt, p_L, self.p_L_change_enable):
-                    self.p_L_rand = p_L_agzu
-            if self.agzu.agzu_is_on is False and self.p_L_change_enable:
-                if _k >= self.p_L_change:
-                    self.p_L_rand = random.uniform(0.96 * p_L, 1.04 * p_L)
-                    self.p_L_change += 625
+            if self.agzu.enable and (
+                p_L_agzu := self.agzu.process(_k, dt, p_L, self.p_L_change_enable)
+            ):
+                self.p_L_rand = p_L_agzu
+            if (
+                self.agzu.agzu_is_on is False
+                and self.p_L_change_enable
+                and _k >= self.p_L_change
+            ):
+                self.p_L_rand = random.uniform(0.96 * p_L, 1.04 * p_L)
+                self.p_L_change += 625
 
             # Шаг по Эйлеру
 
@@ -534,14 +537,12 @@ class Well:
 
 
 class Well2(Well):
-
     def simulate(self, k, dt, M_q, epsilon, res_object):
         """Запуск симуляции"""
 
         self.dt = dt
 
         for _k in range(k):
-
             self.q = self.calc_q()
             self.p_1 = self.calc_p_1()
 
@@ -571,13 +572,17 @@ class Well2(Well):
 
             self.save_result(res_object)
 
-            if self.agzu.enable:
-                if p_L_agzu := self.agzu.process(_k, dt, p_L, self.p_L_change_enable):
-                    self.p_L_rand = p_L_agzu
-            if self.agzu.agzu_is_on is False and self.p_L_change_enable:
-                if _k >= self.p_L_change:
-                    self.p_L_rand = random.uniform(0.96 * p_L, 1.04 * p_L)
-                    self.p_L_change += 625
+            if self.agzu.enable and (
+                p_L_agzu := self.agzu.process(_k, dt, p_L, self.p_L_change_enable)
+            ):
+                self.p_L_rand = p_L_agzu
+            if (
+                self.agzu.agzu_is_on is False
+                and self.p_L_change_enable
+                and _k >= self.p_L_change
+            ):
+                self.p_L_rand = random.uniform(0.96 * p_L, 1.04 * p_L)
+                self.p_L_change += 625
 
             # Шаг по Эйлеру
 

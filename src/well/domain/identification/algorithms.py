@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import scipy
 
-from src.well.domain.helpers import filter_data
+from well.domain.helpers import filter_data
 
 
 def ident_values(ident_k, ident_dt, df_ident, well, filter_name=None):
@@ -16,7 +16,6 @@ def ident_values(ident_k, ident_dt, df_ident, well, filter_name=None):
     calc__q_t = []
 
     for _k in range(ident_k):
-
         b_betta_L = well.b_0 - well.b_1 * (well.params.p_G0 - df_ident["p_L"][_k])
 
         q_L = (b_betta_L / (well.oil.gamma * well.params.r_U)) * (
@@ -86,7 +85,6 @@ def ident_values_nkt(ident_k, ident_dt, df_ident, well, filter_name=None):
     well.pump.i = 1
 
     for _k in range(ident_k):
-
         b_betta_L = well.b_0 - well.b_1 * (well.params.p_G0 - df_ident["p_L"][_k])
 
         q_N = (b_betta_L / (well.oil.gamma * well.params.r_U)) * (
@@ -167,7 +165,6 @@ def ident_values_inflow(ident_k, ident_dt, df_ident, well, filter_name=None):
     t_t = well.pump.t_N * 5
 
     for _k in range(ident_k):
-
         b_betta_L = well.b_0 - well.b_1 * (well.params.p_G0 - df_ident["p_L"][_k])
 
         q_N = (b_betta_L / (well.oil.gamma * well.params.r_U)) * (
@@ -235,7 +232,7 @@ def ident_values_inflow(ident_k, ident_dt, df_ident, well, filter_name=None):
 def identificate_nkt(calc_df, ident_k):
     X = np.array([-calc_df["x_1"], calc_df["x_2"], -calc_df["x_3"]]).T
     y = np.array(calc_df["y"]).T
-    b, squared_error_sum, matrix_rank, SVD_ = scipy.linalg.lstsq(X, y)
+    b, squared_error_sum, _, _ = scipy.linalg.lstsq(X, y)
 
     # b = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
 
@@ -245,7 +242,7 @@ def identificate_nkt(calc_df, ident_k):
 def identificate_inflow(calc_df, ident_k):
     X = np.array([calc_df["x_1"], -calc_df["x_2"], -calc_df["x_3"]]).T
     y = np.array(calc_df["y"]).T
-    b, squared_error_sum, matrix_rank, SVD_ = scipy.linalg.lstsq(X, y)
+    b, squared_error_sum, _, _ = scipy.linalg.lstsq(X, y)
 
     # b = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
 
@@ -255,7 +252,7 @@ def identificate_inflow(calc_df, ident_k):
 def identificate(calc_df, ident_k):
     X = np.array([[1] * ident_k, calc_df["q_t"] * -1, calc_df["_q_t"] * -1]).T
     y = np.array(calc_df["p_1_t"]).T
-    b, squared_error_sum, matrix_rank, SVD_ = scipy.linalg.lstsq(X, y)
+    b, squared_error_sum, _, _ = scipy.linalg.lstsq(X, y)
 
     # b = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
 
@@ -307,7 +304,7 @@ def identificate_regul(calc_df, calc_df_static, v_r, m2=0, m3=0):
         blocks_y.append(y3)
     X = np.vstack(blocks_X)
     y = np.concatenate(blocks_y)
-    b, squared_error_sum, matrix_rank, SVD_ = scipy.linalg.lstsq(X, y)
+    b, _, _, _ = scipy.linalg.lstsq(X, y)
     return b
 
     # формируем и заполняем матрицу размерностью 2x2

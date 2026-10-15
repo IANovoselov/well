@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "well"
+version = "1.0.0"
+requires-python = ">= 3.11"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "matplotlib",
+    "plotly",
+]
+authors = [
+  {name = "Ilya Novoselov", email = "ilyaturtass@yandex.ru"},
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/well"]
+
+[tool.ruff]
+extend-exclude = ["src/well/experiments"]

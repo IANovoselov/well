@@ -4,7 +4,6 @@ from scipy.stats import truncnorm
 
 
 class Meter:
-
     def __init__(self, dt=1):
         self.noise_enable = False
         self.noise_amplitude = 0.01
@@ -17,7 +16,6 @@ class Meter:
         ident_dt = self.dt * denominator
 
         if quant_step is not None:
-
             df_ident = pd.DataFrame(
                 {
                     "p_3": [
@@ -79,23 +77,13 @@ def add_noise(clean_data, dt, lf_amplitude=0.02, hf_amplitude=0.01, lf_cutoff=0.
     hf_noise - высокочастотный шум
     """
 
-    # data_range = np.max(clean_data) - np.min(clean_data)
-    #
-    # fs = 1.0 / dt  # частота дискретизации
-    #
-    ## 1. Генерация низкочастотного шума (дрейф)
-    ## Для суточных данных НЧ шум должен быть очень низкочастотным
-    # b, a = signal.butter(2, lf_cutoff / (fs/2), 'low')
-    # lf_noise = signal.lfilter(b, a, np.random.randn(n))
-    # lf_noise = lf_amplitude * data_range * (lf_noise / np.max(np.abs(lf_noise)))
-
-    # 2. Генерация высокочастотного шума
+    # Генерация высокочастотного шума
     hf_noise = generate_hf_noise(hf_amplitude * 1.5, len(clean_data))
 
     mean = hf_noise.mean()
     hf_noise -= mean
 
-    # 3. Комбинация шумов с чистыми данными
+    # Комбинация шумов с чистыми данными
     noisy_data = clean_data + hf_noise  # + lf_noise
 
     return noisy_data, hf_noise
@@ -112,7 +100,7 @@ def generate_hf_noise(amplitude: float, size: int) -> list[float]:
     a = (min_val - mu) / sigma
     b = (max_val - mu) / sigma
 
-    rng = np.random.default_rng()
+    # rng = np.random.default_rng()
 
     # return np.random.normal(loc=mu, scale=amplitude, size=size)
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=size)
